@@ -1,4 +1,24 @@
+#include <TimerOne.h>
 
+int estado = 0;
+	
+//Pinos Digitais
+int verde_carros;
+int amarelo_carros;
+int vermelho_carros;
+int verde_pedestres;
+int vermelho_pedestres;
+int botao;
+
+//Pino Analogico
+int sensor_luz;
+
+//Flags setadas pelas interrupções
+int flag_botao;
+int flag_timer;
+
+int val_sensor_luz;
+unsigned int tempo;
 
 void setup() {
 	/*Estados:
@@ -8,32 +28,37 @@ void setup() {
 	* 3 - carro: vermelho, pedestre: verde
 	* 4 - carro: vermelho, pedestre: piscando vermelho
 	*/
-	int estado = 0;
+	estado = 0;
 	
 	//Pinos Digitais
-	int verde_carros = 5;
-	int amarelo_carros = 6;
-	int vermelho_carros = 7;
-	int verde_pedestres = 8;
-	int vermelho_pedestres = 9;
-	int botao = 3; //por causa da funcao de interrupção externa do arduino
+	verde_carros = 5;
+	amarelo_carros = 6;
+	vermelho_carros = 7;
+	verde_pedestres = 8;
+	vermelho_pedestres = 9;
+	botao = 3; //por causa da funcao de interrupção externa do arduino
 
 	//Pino Analogico
-	int sensor_luz = 0;
+	sensor_luz = 5;
 
 	//Flags setadas pelas interrupções
-	int flag_botao = 0;
-	int flag_timer = 0;
+	flag_botao = 0;
+	flag_timer = 0;
 
-	//Variaveis usadas no codigo
-	int val_sensor_luz;
-
-	pinMode(botao, INPUT);
-  	pinMode(verde_carros, OUTPUT); // verde
- 	pinMode(amarelo_carros, OUTPUT); // amarelo
+	//Inicializando a direçao dos pinos da GPIO
+  	pinMode(botao, INPUT);
+    pinMode(verde_carros, OUTPUT); // verde
+   	pinMode(amarelo_carros, OUTPUT); // amarelo
   	pinMode(vermelho_carros, OUTPUT); // vermelho
   	pinMode(verde_pedestres, OUTPUT); //verde pedestre
   	pinMode(vermelho_pedestre, OUTPUT); //vermelho pedestre
+
+  	//Inicializando o Timer para interromper a cada 10ms
+  	Timer1.initialize(10000); 
+  	Timer1.attachInterrupt(contador_tempo);
+
+  	//Inicializando a interrupção com o pushbutton
+  	attachInterrupt(digitalPinToInterrupt(3), seta_flag_botao, RISING);
 
   	//Serial para depuração
   	Serial.begin(9600);
@@ -53,7 +78,7 @@ void loop() {
     //fecha_semaforo();
 
   }
-  else if (estado == 1) {
+  else{
     //de noite
     //pisca amarelo pros carros
     //pisca vermelhor pro pedestre
@@ -63,8 +88,20 @@ void loop() {
 
 }
 
+
+void contador_tempo (){
+  tempo += 1;
+}
+
+
 void seta_flag_botao(){
-	flag_botao = 1;
+	unsigned int tempo_aux = tempo;
+	//evita debounce
+	while(tempo_aux + 3 <  tempo);
+	if (digitalRead(3) == 1){
+		flag_botao = 1;
+	}
+	
 }
 
 
