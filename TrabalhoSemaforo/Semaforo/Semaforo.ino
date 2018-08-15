@@ -1,6 +1,6 @@
 #include <TimerOne.h>
 
-#define LIMIAR 550
+#define LIMIAR 300
 
 int estado = 0;
 	
@@ -17,10 +17,13 @@ int sensor_luz;
 
 //Flags setadas pelas interrupções
 int flag_botao;
+int flag_temporaria;
 
-int val_sensor_luz;
-unsigned int tempo;
-unsigned int tempo_antes;
+int valores_sensor_luz[30]; 
+volatile unsigned long int tempo;
+volatile unsigned long int tempo_botao;
+volatile unsigned long int tempo_luz;
+int i;
 int alternador_vermelho_pedestre;
 int alternador_amarelo_carro;
 int contador_piscadas;
@@ -49,6 +52,12 @@ void setup() {
 
 	//Flags setadas pelas interrupções
 	flag_botao = 0;
+	flag_temporaria= 0;
+
+	//Inicializa os tempos
+	tempo = 0;
+	tempo_botao = 0;
+	tempo_luz = 0;
 
 
 	//Inicializando a direçao dos pinos da GPIO
@@ -64,7 +73,7 @@ void setup() {
   	Timer1.attachInterrupt(contador_tempo);
 
   	//Inicializando a interrupção com o pushbutton
-  	attachInterrupt(digitalPinToInterrupt(3), seta_flag_botao, RISING);
+  	//attachInterrupt(digitalPinToInterrupt(3), seta_flag_botao, RISING);
 
   	//Serial para depuração
   	Serial.begin(9600);
@@ -80,13 +89,24 @@ void setup() {
 	alternador_amarelo_carro = 1;
 	contador_piscadas = 0;
 
+
+	//Inicializa o vetor de valores de luminosidade
+	for (i = 0; i < 30; i++){
+		valores_sensor_luz[i] = 0;
+	}
+	int i = 0;
 }
 
 void loop() {
-  Serial.println(estado);
+  	//Serial.println(tempo);
+  	Serial.println(estado);
+
+  	checa_luz();
+
 	//maquina de estados
 	switch(estado){
 		case 0:
+			checa_botao();
 			semaforo_carro_aberto();
 			break;
 		case 1:
@@ -101,11 +121,11 @@ void loop() {
 			semaforo_pedestre_piscando();
 			flag_botao = 0;
 			break;
+		// case 4:
+		// 	transicao();
+		// 	flag_botao = 0;
+		// 	break;
 		case 4:
-			transicao();
-			flag_botao = 0;
-			break;
-		case 5:
 			semaforo_piscando_noite();
 			flag_botao = 0;
 			break;
@@ -118,30 +138,64 @@ void loop() {
 
 void contador_tempo (){
   tempo += 1;
+  tempo_botao += 1;
+  tempo_luz += 1;
 }
 
 
-void seta_flag_botao(){
-	unsigned int tempo_aux = tempo;
-	//evita debounce
-	//while(abs(tempo - tempo_aux) <  3);
-	if (digitalRead(3) == 1){
-		flag_botao = 1;
+//pode ter erro aqui <-- cuidado
+void checa_botao(){
+	if (digitalRead(botao) && (flag_temporaria == 0)){
+    Serial.println("detectou a primeira borda");
+  		flag_temporaria = 1;
+  		tempo_botao = 0 ;
+  	}
+  	if (tempo_botao > 3 && (flag_temporaria == 1)){//se passou 30ms
+  		flag_temporaria = 2;
+  		if (digitalRead(botao)){
+        Serial.println("continua apertado");
+  			flag_botao = 1;
+  			tempo = 0;
+  		}
+  	}
+
+  	else if (tempo_botao > 401 && (flag_temporaria > 0) ){
+  		flag_temporaria = 0;
+  	}
+  
+}
+
+void checa_luz(){
+	//medir a luz de 100ms em 100ms
+	if (tempo_luz >= 10){
+		valores_sensor_luz[i] = analogRead(sensor_luz);
+		i = (i + 1)%30;
+		tempo_luz = 0;
 	}
+}
+
+int calcula_media_luz(){
+	float media;
+	for (int j = 0 ; j < 30; j++){
+		media += valores_sensor_luz[i];
+	}
+	return (int)(media/30);
 }
 
 
 void semaforo_carro_aberto(){
 	//se ficou escuro
-	if (analogRead(sensor_luz) > LIMIAR){
+	if (calcula_media_luz() > LIMIAR){
 		flag_botao = 0;
-		tempo_antes = tempo;
+		// tempo_antes = tempo;
+		tempo = 0;
 		estado = 4;
 	}
 	//se apertou o botao
-	if (flag_botao){
+	if (tempo > 400 && flag_botao){
 		flag_botao = 0;
-		tempo_antes = tempo;
+		// tempo_antes = tempo;
+		tempo = 0;
 		estado = 1;
 		digitalWrite(verde_carros, LOW);
 		digitalWrite(amarelo_carros, HIGH);
@@ -154,8 +208,9 @@ void semaforo_carro_aberto(){
 void semaforo_carro_amarelo(){
 	
 	//se tiver passado 5 segundos
-	if (abs(tempo - tempo_antes) > 500 ){
-		tempo_antes = tempo;
+	if (tempo > 500 ){
+		// tempo_antes = tempo;
+		tempo = 0;
 		estado = 2;
 		digitalWrite(verde_carros, LOW);
 		digitalWrite(amarelo_carros, LOW);
@@ -168,8 +223,9 @@ void semaforo_carro_amarelo(){
 void semaforo_carro_vermelho(){
 	
 	//se tiver passado 15 segundos
-	if (abs(tempo - tempo_antes) > 1500 ){
-		tempo_antes = tempo;
+	if (tempo > 1500 ){
+		// tempo_antes = tempo;
+		tempo = 0;
 		estado = 3;
 		digitalWrite(verde_carros, LOW);
 		digitalWrite(amarelo_carros, LOW);
@@ -182,15 +238,17 @@ void semaforo_carro_vermelho(){
 void semaforo_pedestre_piscando(){
 	
 	//pisca o vermelho (inverte seu valor logico a cada 0.5s)
-	if (abs(tempo- tempo_antes) > 50){
-		tempo_antes = tempo;
+	if (tempo > 50){
+		// tempo_antes = tempo;
+		tempo = 0;
 		alternador_vermelho_pedestre = 1 - alternador_vermelho_pedestre;
 		digitalWrite(vermelho_pedestres, alternador_vermelho_pedestre);
 		contador_piscadas += 1;
 	}
 	//se tiver passado 5 segundos
 	if (contador_piscadas >= 10 ){
-		tempo_antes = tempo;
+		// tempo_antes = tempo;
+		tempo = 0;
 		estado = 0;
 		contador_piscadas = 0;
 		digitalWrite(verde_carros, HIGH);
@@ -201,45 +259,50 @@ void semaforo_pedestre_piscando(){
 	}
 }
 
-void transicao(){
-	//se passou 2s
-	if (abs(tempo- tempo_antes) > 200){
-		//se esta claro, volta para o estado 0 (verde para os carros)
-		if (analogRead(sensor_luz) < LIMIAR){
-			estado = 0;
-			digitalWrite(verde_carros, HIGH);
-			digitalWrite(amarelo_carros, LOW);
-			digitalWrite(vermelho_carros, LOW);
-			digitalWrite(verde_pedestres, LOW);
-			digitalWrite(vermelho_pedestres,HIGH);
-		}
-		//senao, se esta escuro vai para o estado 
-		else{
-			estado = 5;
-			tempo_antes = tempo;
-			digitalWrite(verde_carros, LOW);
-			digitalWrite(amarelo_carros, HIGH);
-			digitalWrite(vermelho_carros, LOW);
-			digitalWrite(verde_pedestres, LOW);
-			digitalWrite(vermelho_pedestres,HIGH);
-		}
-	}
+// void transicao(){
+// 	//se passou 5s
+// 	if (tempo > 500){
+// 		//se esta claro, volta para o estado 0 (verde para os carros)
+// 		if (analogRead(sensor_luz) < LIMIAR){
+// 			// tempo_antes = tempo;
+// 			tempo = 0;
+// 			estado = 0;
+// 			digitalWrite(verde_carros, HIGH);
+// 			digitalWrite(amarelo_carros, LOW);
+// 			digitalWrite(vermelho_carros, LOW);
+// 			digitalWrite(verde_pedestres, LOW);
+// 			digitalWrite(vermelho_pedestres,HIGH);
+// 		}
+// 		//senao, se esta escuro vai para o estado 
+// 		else{
+// 			// tempo_antes = tempo;
+// 			tempo = 0;
+// 			estado = 5;
+// 			digitalWrite(verde_carros, LOW);
+// 			digitalWrite(amarelo_carros, HIGH);
+// 			digitalWrite(vermelho_carros, LOW);
+// 			digitalWrite(verde_pedestres, LOW);
+// 			digitalWrite(vermelho_pedestres,HIGH);
+// 		}
+// 	}
 
-}
+// }
 
 void semaforo_piscando_noite(){
 	//pisca o vermelho (inverte seu valor logico a cada 0.5s)
-	if (abs(tempo- tempo_antes) > 50){
-		tempo_antes = tempo;
+	if (tempo > 50){
+		// tempo_antes = tempo;
+		tempo = 0;
 		alternador_vermelho_pedestre = 1 - alternador_vermelho_pedestre;
 		alternador_amarelo_carro = 1 - alternador_amarelo_carro;
 		digitalWrite(vermelho_pedestres, alternador_vermelho_pedestre);
 		digitalWrite(amarelo_carros, alternador_amarelo_carro);
 	}
 	//se fica claro, vai para o estado de transicao entre dia e noite
-	if (analogRead(sensor_luz) < LIMIAR){
-		tempo_antes = tempo;
-		estado = 4;
+	if (calcula_media_luz() < LIMIAR){
+		// tempo_antes = tempo;
+		tempo = 0;
+		estado = 0;
 		digitalWrite(verde_carros, LOW);
 		digitalWrite(amarelo_carros, HIGH);
 		digitalWrite(vermelho_carros, LOW);
@@ -248,24 +311,3 @@ void semaforo_piscando_noite(){
 	}
 
 }
-
-// void fecha_semaforo() {
-//   //espera 5 segundos
-//   //amarelo pros carros
-//   digitalWrite(verde_carros, LOW);
-//   digitalWrite(amarelo_carros, HIGH);
-//   //mais 5 segundos:
-//   //fecha pros carros e abre pro pedestre
-//   digitalWrite(amarelo_carros, LOW);
-//   digitalWrite(vermelho_carros, HIGH);
-//   digitalWrite(verde_pedestres, HIGH);
-//   //20 segundos
-//   digitalWrite(verde_pedestres, LOW);
-//   //pisca o vermelho do pedestre
-
-//   //5 segundos
-//   digitalWrite(vermelho_carros, LOW);
-//   digitalWrite(vermelho_pedestres, HIGH);
-//   digitalWrite(verde_carros, HIGH);
-// }
-
