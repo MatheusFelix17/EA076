@@ -1,5 +1,7 @@
 #include <TimerOne.h>
 
+#define LIMIAR 550
+
 int estado = 0;
 	
 //Pinos Digitais
@@ -20,6 +22,7 @@ int val_sensor_luz;
 unsigned int tempo;
 unsigned int tempo_antes;
 int alternador_vermelho_pedestre;
+int alternador_amarelo_carro;
 int contador_piscadas;
 
 void setup() {
@@ -74,6 +77,7 @@ void setup() {
 	digitalWrite(vermelho_pedestres,HIGH);
 
 	alternador_vermelho_pedestre = 1;
+	alternador_amarelo_carro = 1;
 	contador_piscadas = 0;
 
 }
@@ -98,9 +102,11 @@ void loop() {
 			flag_botao = 0;
 			break;
 		case 4:
+			transicao();
 			flag_botao = 0;
 			break;
 		case 5:
+			semaforo_piscando_noite();
 			flag_botao = 0;
 			break;
 		default:
@@ -124,8 +130,15 @@ void seta_flag_botao(){
 	}
 }
 
+
 void semaforo_carro_aberto(){
-	
+	//se ficou escuro
+	if (analogRead(sensor_luz) > LIMIAR){
+		flag_botao = 0;
+		tempo_antes = tempo;
+		estado = 4;
+	}
+	//se apertou o botao
 	if (flag_botao){
 		flag_botao = 0;
 		tempo_antes = tempo;
@@ -188,6 +201,53 @@ void semaforo_pedestre_piscando(){
 	}
 }
 
+void transicao(){
+	//se passou 2s
+	if (abs(tempo- tempo_antes) > 200){
+		//se esta claro, volta para o estado 0 (verde para os carros)
+		if (analogRead(sensor_luz) < LIMIAR){
+			estado = 0;
+			digitalWrite(verde_carros, HIGH);
+			digitalWrite(amarelo_carros, LOW);
+			digitalWrite(vermelho_carros, LOW);
+			digitalWrite(verde_pedestres, LOW);
+			digitalWrite(vermelho_pedestres,HIGH);
+		}
+		//senao, se esta escuro vai para o estado 
+		else{
+			estado = 5;
+			tempo_antes = tempo;
+			digitalWrite(verde_carros, LOW);
+			digitalWrite(amarelo_carros, HIGH);
+			digitalWrite(vermelho_carros, LOW);
+			digitalWrite(verde_pedestres, LOW);
+			digitalWrite(vermelho_pedestres,HIGH);
+		}
+	}
+
+}
+
+void semaforo_piscando_noite(){
+	//pisca o vermelho (inverte seu valor logico a cada 0.5s)
+	if (abs(tempo- tempo_antes) > 50){
+		tempo_antes = tempo;
+		alternador_vermelho_pedestre = 1 - alternador_vermelho_pedestre;
+		alternador_amarelo_carro = 1 - alternador_amarelo_carro;
+		digitalWrite(vermelho_pedestres, alternador_vermelho_pedestre);
+		digitalWrite(amarelo_carros, alternador_amarelo_carro);
+	}
+	//se fica claro, vai para o estado de transicao entre dia e noite
+	if (analogRead(sensor_luz) < LIMIAR){
+		tempo_antes = tempo;
+		estado = 4;
+		digitalWrite(verde_carros, LOW);
+		digitalWrite(amarelo_carros, HIGH);
+		digitalWrite(vermelho_carros, LOW);
+		digitalWrite(verde_pedestres, LOW);
+		digitalWrite(vermelho_pedestres,HIGH);
+	}
+
+}
 
 // void fecha_semaforo() {
 //   //espera 5 segundos
