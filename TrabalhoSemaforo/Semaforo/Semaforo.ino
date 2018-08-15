@@ -19,6 +19,8 @@ int flag_botao;
 int val_sensor_luz;
 unsigned int tempo;
 unsigned int tempo_antes;
+int alternador_vermelho_pedestre;
+int contador_piscadas;
 
 void setup() {
 	/*Estados:
@@ -44,7 +46,7 @@ void setup() {
 
 	//Flags setadas pelas interrupções
 	flag_botao = 0;
-	flag_timer = 0;
+
 
 	//Inicializando a direçao dos pinos da GPIO
   	pinMode(botao, INPUT);
@@ -52,7 +54,7 @@ void setup() {
    	pinMode(amarelo_carros, OUTPUT); // amarelo
   	pinMode(vermelho_carros, OUTPUT); // vermelho
   	pinMode(verde_pedestres, OUTPUT); //verde pedestre
-  	pinMode(vermelho_pedestre, OUTPUT); //vermelho pedestre
+  	pinMode(vermelho_pedestres, OUTPUT); //vermelho pedestre
 
   	//Inicializando o Timer para interromper a cada 10ms
   	Timer1.initialize(10000); 
@@ -63,9 +65,21 @@ void setup() {
 
   	//Serial para depuração
   	Serial.begin(9600);
+
+  	//Inicializando os leds para o estado 0 (verde para carros)
+  	digitalWrite(verde_carros, HIGH);
+	digitalWrite(amarelo_carros, LOW);
+	digitalWrite(vermelho_carros, LOW);
+	digitalWrite(verde_pedestres, LOW);
+	digitalWrite(vermelho_pedestres,HIGH);
+
+	alternador_vermelho_pedestre = 1;
+	contador_piscadas = 0;
+
 }
 
 void loop() {
+  Serial.println(estado);
 	//maquina de estados
 	switch(estado){
 		case 0:
@@ -104,66 +118,73 @@ void contador_tempo (){
 void seta_flag_botao(){
 	unsigned int tempo_aux = tempo;
 	//evita debounce
-	while(abs(tempo - tempo_aux) <  3);
+	//while(abs(tempo - tempo_aux) <  3);
 	if (digitalRead(3) == 1){
 		flag_botao = 1;
 	}
 }
 
 void semaforo_carro_aberto(){
-	digitalWrite(verde_carros, HIGH);
-	digitalWrite(amarelo_carros, LOW);
-	digitalWrite(vermelho_carros, LOW);
-	digitalWrite(verde_pedestres, LOW);
-	digitalWrite(vermelho_pedestres,HIGH);
+	
 	if (flag_botao){
 		flag_botao = 0;
 		tempo_antes = tempo;
 		estado = 1;
+		digitalWrite(verde_carros, LOW);
+		digitalWrite(amarelo_carros, HIGH);
+		digitalWrite(vermelho_carros, LOW);
+		digitalWrite(verde_pedestres, LOW);
+		digitalWrite(vermelho_pedestres,HIGH);
 	}
 }
 
 void semaforo_carro_amarelo(){
-	digitalWrite(verde_carros, LOW);
-	digitalWrite(amarelo_carros, HIGH);
-	digitalWrite(vermelho_carros, LOW);
-	digitalWrite(verde_pedestres, LOW);
-	digitalWrite(vermelho_pedestres,HIGH);
+	
 	//se tiver passado 5 segundos
 	if (abs(tempo - tempo_antes) > 500 ){
 		tempo_antes = tempo;
 		estado = 2;
+		digitalWrite(verde_carros, LOW);
+		digitalWrite(amarelo_carros, LOW);
+		digitalWrite(vermelho_carros, HIGH);
+		digitalWrite(verde_pedestres, HIGH);
+		digitalWrite(vermelho_pedestres,LOW);
 	}
 }
 
 void semaforo_carro_vermelho(){
-	digitalWrite(verde_carros, LOW);
-	digitalWrite(amarelo_carros, LOW);
-	digitalWrite(vermelho_carros, HIGH);
-	digitalWrite(verde_pedestres, HIGH);
-	digitalWrite(vermelho_pedestres,LOW);
 	
 	//se tiver passado 15 segundos
 	if (abs(tempo - tempo_antes) > 1500 ){
 		tempo_antes = tempo;
 		estado = 3;
+		digitalWrite(verde_carros, LOW);
+		digitalWrite(amarelo_carros, LOW);
+		digitalWrite(vermelho_carros, HIGH);
+		digitalWrite(verde_pedestres, LOW);
+		digitalWrite(vermelho_pedestres,LOW);
 	}
 }
 
 void semaforo_pedestre_piscando(){
-	digitalWrite(verde_carros, LOW);
-	digitalWrite(amarelo_carros, LOW);
-	digitalWrite(vermelho_carros, HIGH);
-	digitalWrite(verde_pedestres, LOW);
-
+	
 	//pisca o vermelho (inverte seu valor logico a cada 0.5s)
-	if (abs(tempo - tempo_antes) > 50){
-		digitalWrite(vermelho_pedestres,!digitalRead(vermelho_pedestres));
+	if (abs(tempo- tempo_antes) > 50){
+		tempo_antes = tempo;
+		alternador_vermelho_pedestre = 1 - alternador_vermelho_pedestre;
+		digitalWrite(vermelho_pedestres, alternador_vermelho_pedestre);
+		contador_piscadas += 1;
 	}
 	//se tiver passado 5 segundos
-	if (abs(tempo - tempo_antes) > 500 ){
+	if (contador_piscadas >= 10 ){
 		tempo_antes = tempo;
 		estado = 0;
+		contador_piscadas = 0;
+		digitalWrite(verde_carros, HIGH);
+		digitalWrite(amarelo_carros, LOW);
+		digitalWrite(vermelho_carros, LOW);
+		digitalWrite(verde_pedestres, LOW);
+		digitalWrite(vermelho_pedestres,HIGH);
 	}
 }
 
