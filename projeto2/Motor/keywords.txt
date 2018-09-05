@@ -1,0 +1,5 @@
+Motor KEYWORD1
+ventilador KEYWORD2
+exaustor KEYWORD2
+parado KEYWORD2
+seta_speed KEYWORD2
