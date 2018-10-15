@@ -40,7 +40,7 @@ int l1 = 7;
 int l2 = 6;
 int l3 = 5;
 int l4 = 4;
-
+  
 void setup()
 {
   /*
@@ -92,16 +92,39 @@ void setup()
    * Inicializa o I2C para a EEPROM
    */
   Wire.begin();
+
+  /*
+  * Teste EEPROM
+  */
+  temperatura = 0;
+
+  medeTemperatura();
+  Serial.println(temperatura);
+  unsigned int temperaturaEscrita = (unsigned int)(temperatura * 10);
+  
+  //Serial.println(temperaturaEscrita);
+  writeEeprom(40);
+  writeEeprom(50);
+  Serial.println(readEeprom(0));
+  Serial.println(readEeprom(2));
+  Serial.println(readEeprom(2046));
+  resetEeprom();
+  Serial.println(readEeprom(2046));
+  writeEeprom(1000);
+  writeEeprom(1002);
+  Serial.println(readEeprom(0));
+  Serial.println(readEeprom(2));
+  Serial.println(readEeprom(2046));
 }
 
 
 
 void loop(){
-  /*
-   * Le a entrada serial enviada via Bluetooth
-   */
-  medeTemperatura();
-  Serial.println(temperatura);
+//  /*
+//   * Le a entrada serial enviada via Bluetooth
+//   */
+//  medeTemperatura();
+//  Serial.println(temperatura);
 
 
 }
