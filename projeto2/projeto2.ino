@@ -1,4 +1,5 @@
 #include "TimerOne.h"
+#include <SPI.h>
 /*Bibliotecas para a interface com o monitor LCD*/
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
