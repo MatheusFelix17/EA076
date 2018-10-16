@@ -2,7 +2,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 #include <TimerOne.h>
-
+#include <Wire.h>
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(8, 9, 2); //
 
@@ -13,7 +13,7 @@ int sensorTemperatura = A0;
 float temperatura;
 
 /*
- * Teclado Matricial
+ * Teclado Matriciala
  */
 int C1 = A3;
 int C2 = A2;
@@ -31,6 +31,12 @@ int solto = 0, pressionado = 0;
 // tempo em que uma tecla foi acionada, para fazer o debounce
 unsigned long int momento_pressionado;
 unsigned int intervaloTemperatura;
+unsigned int tempo_display;
+unsigned short tempoColeta;
+
+
+bool flagColeta = false;
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -67,7 +73,10 @@ void setup() {
   //estado inicial depois vou mudar, coloquei 11 pra como se apertasse o 0 levasse ate o menu principal
   estado = 11;
 
+  //Inicializa o I2C para a memoria 
+  Wire.begin();
 }
+
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -83,47 +92,51 @@ void loop() {
   * 5 - 
   * 6 - 
   */
-  estado = checa_tecla();
+  int teclado = checa_tecla();
   solto = 0;
-  
-  //medeTemperatura();
 
-  
-  //Serial.print("Estado = ");
-  //Serial.println(estado);
+  if (teclado != -1 && estado != 100){
+    estado = teclado;
+  }
 
-  //estado 'sem escolha' = -1
+  if (flagColeta == true && tempoColeta > 200){//se passou 2 segundos e tem que escrever a temperatura na memoria
+    tempoColeta = 0;
+    writeEeprom(temperatura);
+  }
   
   switch(estado) {
-    case 11:      
-      //depois vou mudar, coloquei 11 pra como se apertasse o 0 levasse ate o menu principal
-      Serial.println("Menu Principal");
+    
+    //MENU PRINCIPAL
+    case 150:      
       display_print(0);
-      delay(300);
-      //sem o delay ficou aparecendo várias vezes na tela... corrigir isso
     break;
 
+    //APERTOU 1 : Reset
     case 1:
-      //função de reset
       Serial.println("Quer resetar?");
-      //fiz um 'tem certeza' genérico
       display_print(1);
-      //se apertar o '#' que no teclado lemos como 12, aí confirma o comando
+      //aguarda apertar '*' ou '#' 
       while (estado != 12 && estado != 10) {
         //a confirmação vai ser feita se cancelar, com '*', ou confirmar, com '#'
         estado = checa_tecla();
         solto = 0;
       }  
+      
+      //se apertar o '#' que no teclado lemos como 12, resetamos
       if (estado == 12) {
         Serial.println("Estou entrando na operacao de RESET");
-        //função de reset
-        //coloco uma confirmação de tela por alguns segundos e depois retorno pro Menu??
+        resetEeprom();
         display_print(11);
+        tempo_display = 0;
+        estado = 100;
+        
       }
+      
       else if (estado == 10) {
         Serial.println("Voltando ao MENU");
         //* cancelou, entao volta a printar o menu
         display_print(0);
+        estado = 150;
       }
     break;
 
@@ -139,12 +152,17 @@ void loop() {
       if (estado == 12) {
         Serial.println("Estou entrando na operacao de MEASURE");
         display_print(2);
-        //função 
+
+        Serial.println("indo para o estado de transicao");
+        tempo_display = 0;
+        estado = 100;
       }
+      
       else if (estado == 10) {
         Serial.println("Voltando ao MENU");
         //* cancelou, entao volta a printar o menu
         display_print(0);
+        estado = 150;
       }      
     break;
 
@@ -160,12 +178,14 @@ void loop() {
       if (estado == 12) {
         Serial.println("Estou entrando na operacao de STATUS");
         display_print(3);
-        //função 
+        tempo_display = 0;
+        estado = 100; 
       }    
       else if (estado == 10) {
         Serial.println("Voltando ao MENU");
         //* cancelou, entao volta a printar o menu
         display_print(0);
+        estado = 150;
       }        
     break;
 
@@ -181,12 +201,16 @@ void loop() {
       if (estado == 12) {        
         Serial.println("Estou entrando na operacao de INICIAR COLETA");
         display_print(4);
-        //função 
+        flagColeta = true;
+        tempoColeta = 0;
+        tempo_display = 0;
+        estado = 100;
       }   
       else if (estado == 10) {
         Serial.println("Voltando ao MENU");
         //* cancelou, entao volta a printar o menu
         display_print(0);
+        estado = 150;
       }           
     break;
 
@@ -202,12 +226,15 @@ void loop() {
       if (estado == 12) {
         Serial.println("Estou entrando na operacao de ENCERRAR COLETA");
         display_print(5);
-        //função 
+        tempo_display = 0;
+        flagColeta = false;
+        estado = 100;
       }  
       else if (estado == 10) {
         Serial.println("Voltando ao MENU");
         //* cancelou, entao volta a printar o menu
         display_print(0);
+        estado = 150;
       }            
     break;
 
@@ -223,15 +250,22 @@ void loop() {
       if (estado == 12) {
         Serial.println("Estou entrando na operacao de TRANSFERIR DADOS");
         display_print(6);
-        //função 
+        transferencia();
       }   
       else if (estado == 10) {
         Serial.println("Voltando ao MENU");
         //* cancelou, entao volta a printar o menu
         display_print(0);
+        estado = 150;
       }           
     break;
 
+    case 100:
+      if (tempo_display > 200){
+        estado = 150; 
+      }
+    break;
+
     default:
     break;
   }
@@ -239,224 +273,70 @@ void loop() {
   
 }
 
-void display_print(int i) {
-  switch(i) {
 
-    /* display.begin();
-    display.setContrast(40); //Ajusta o contraste do display
-    display.clearDisplay();   //Apaga o buffer e o display
-    display.setTextSize(1);  //Seta o tamanho do texto
-    display.setTextColor(BLACK); //Seta a cor do texto
-    display.setCursor(0,0);  //Seta a posição do cursor
-    display.println("Menu Principal");
-    display.display(); */
-  
-    //menu principal
-    case 0:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("1 - Reset");
-      display.setCursor(0,8);
-      display.println("2 - Measure");
-      display.setCursor(0,16);
-      display.println("3 - Status");
-      display.setCursor(0,24);
-      display.println("4 - Start");
-      display.setCursor(0,32);
-      display.println("5 - End");
-      display.setCursor(0,40);
-      display.println("6 - Transfer");
-      display.display();
-    break;
-  
-    case 1:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("Tem Certeza?");
-      display.setCursor(0,8);
-      display.println("* para cancelar");
-      display.setCursor(0,16);
-      display.println("# para confirmar");
-      display.display();
-    break;
-  
-    case 2:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("Temperatura: ");
-      //tem mais coisa daqui
-      display.display();
-    break;
-  
-    case 3:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("Dados gravados: ");
-      //print do numero
-      display.setCursor(0,8);
-      display.println("Medicoes disponiveis: ");
-      //print do numero
-      display.display();
-    break;
-  
-    case 4:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("Iniciando coleta periodica");
-      display.display();
-    break;
-  
-    case 5:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("Coleta periodica encerrada");
-      display.display();
-    break;
-  
-    case 6:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("Insira o numero de medicoes");  //quantas quer transferir
-      display.setCursor(0,16);
-      display.println("Seguido de * ou #");
-      display.display();
-    break;
-
-    case 11:
-      display.clearDisplay();
-      display.setCursor(0,0);
-      display.println("Memoria APAGADA");
-      //delay(300);
-    break;
-  
-    default:
-    break;
-
-  }
-  
-}
-
-int checa_coluna() {
-  int j;
-
-  if (digitalRead(C1)== LOW){
-    return 1;
-  }
-  if (digitalRead(C2)== LOW){
-    return 2;
-  }
-  if (digitalRead(C3)== LOW){
-    return 3;
-  }
-
-  return -1;
-}
 
 void contador_tempo () {
   momento_pressionado += 1;
   intervaloTemperatura += 1;
+  tempo_display += 1;
+  tempoColeta += 1;
   if (intervaloTemperatura > 200){//passou 2s
     intervaloTemperatura = 0;
     temperatura = (analogRead(sensorTemperatura)/1023.0)*5*100;
   }
 }
 
-//void medeTemperatura(){
-//  temperatura = (analogRead(sensorTemperatura)/1023.0)*5*100;
-//}
-
-
-int checa_tecla() {
-  int i, coluna_pressionada;
-  int linha_pressionada = 0;
-  digitalWrite(L1, HIGH);
-  digitalWrite(L2, HIGH);
-  digitalWrite(L3, HIGH);
-  digitalWrite(L4, HIGH);
-  //Varre todas as linhas
-  for (i = 0; i < 4 && solto == 0; i++) {
-     switch (i) {
-      case 0:
-        digitalWrite(L1, LOW);
-        coluna_pressionada = checa_coluna();
-        //Detectou que tem tecla pressionada
-        if (coluna_pressionada != -1){
-          if (pressionado == 0) {
-            momento_pressionado = 0;
-            pressionado = 1;
-          }
-          //TEMPO PARA DEBOUNCE
-          if (pressionado == 1 && momento_pressionado >= 3) { //30 ms
-            solto = 1;
-            linha_pressionada = i;
-            return linha_pressionada * 3 + coluna_pressionada;
-          } 
+void transferencia(){
+  Serial.println("entrou na transferencia");
+  
+  String valor = "";
+  bool flagNumeroUnico = false;
+  int tecla = 0;
+  tecla = checa_tecla();
+  Serial.println(tecla);
+  //Ignorando o # da confirmacao da mudança de estado
+  while (tecla == 12){
+    tecla = checa_tecla();
+  }
+  Serial.println(tecla);
+  while (tecla == -1){
+    tecla = checa_tecla();
+  }
+  Serial.println(tecla);
+  
+  while(tecla != 12 && tecla != 10){
+    tecla = checa_tecla();
+    //if ( tecla != -1){
+//      Serial.print("Tecla apertada:");
+//      Serial.println(tecla);
+    //}
+    //espera soltar a tecla
+    while (tecla != -1){
+      if (flagNumeroUnico == false){
+        if (tecla == 10){
+          tecla = 0;//0 no nosso teclado é 10
         }
-        digitalWrite(L1, HIGH);
-      break;
-
-      case 1:
-        
-        digitalWrite(L2, LOW);
-        coluna_pressionada = checa_coluna();
-        //Detectou que tem tecla pressionada
-        if (coluna_pressionada != -1){
-          if (pressionado == 0) {
-            momento_pressionado = 0;
-            pressionado = 1;
-          }
-          //TEMPO PARA DEBOUNCE
-          if (pressionado == 1 && momento_pressionado >= 3) { //30ms
-            solto = 1;
-            linha_pressionada = i;
-            return linha_pressionada * 3 + coluna_pressionada; 
-          }          
+        valor += String(tecla);
+        flagNumeroUnico = true;
+      }
+      tecla = checa_tecla();
+    }
+    
+    
+    
+  }
+  Serial.println("saiu da leitura de teclado");
+  if (tecla == 12){//se confirmou
+    if (valor.toInt() >=1 && valor.toInt() <=1022){//se pediu uma quantidade valida
+      if (valor.toInt() <= memoriaLivre(2046)){
+        for (int i = 0; i < valor.toInt(); i++){
+          Serial.println(readEeprom(i*2));
         }
-        digitalWrite(L2, HIGH);
-      break;
-
-      case 2:
-        digitalWrite(L3, LOW);
-        coluna_pressionada = checa_coluna();
-        //Detectou que tem tecla pressionada
-        if (coluna_pressionada != -1){
-          if (pressionado == 0) {
-            momento_pressionado = 0;
-            pressionado = 1;
-          }
-          //TEMPO PARA DEBOUNCE
-          if (pressionado == 1 && momento_pressionado >= 3) { //30ms
-            solto = 1;
-            linha_pressionada = i;
-            return linha_pressionada * 3 + coluna_pressionada; 
-          } 
-        }
-        digitalWrite(L3, HIGH);
-      break;  
-
-      case 3:
-        digitalWrite(L4, LOW);
-        coluna_pressionada = checa_coluna();
-        //Detectou que tem tecla pressionada
-        if (coluna_pressionada != -1){
-          if (pressionado == 0) {
-            momento_pressionado = 0;
-            pressionado = 1;
-          }
-          //TEMPO PARA DEBOUNCE
-          if (pressionado == 1 && momento_pressionado >= 3) { //30ms
-            solto = 1;
-            linha_pressionada = i;
-            return linha_pressionada * 3 + coluna_pressionada; 
-          }          
-        }
-        digitalWrite(L4, HIGH);
-      break;
-
-      default:
-      break;
-      
-     }//end switch
-  }//end for
-  return -1;
+      }
+    }
+  }
+  Serial.println("saiu");
+//  tempo_display = 0;
+//  estado = 100;
 }
+
