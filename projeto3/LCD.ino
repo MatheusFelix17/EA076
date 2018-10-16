@@ -1,15 +1,6 @@
 void display_print(int i) {
-  switch(i) {
-
-    /* display.begin();
-    display.setContrast(40); //Ajusta o contraste do display
-    display.clearDisplay();   //Apaga o buffer e o display
-    display.setTextSize(1);  //Seta o tamanho do texto
-    display.setTextColor(BLACK); //Seta a cor do texto
-    display.setCursor(0,0);  //Seta a posição do cursor
-    display.println("Menu Principal");
-    display.display(); */
-  
+  float temp = temperatura;
+  switch(i) {  
     //menu principal
     case 0:
       display.clearDisplay();
@@ -45,10 +36,10 @@ void display_print(int i) {
       display.println("Temperatura: ");
       //tem mais coisa daqui
       display.setCursor(0,16);
-      display.setTextSize(2);
+      //display.setTextSize(2);
       display.println(temperatura);
       display.display();
-      display.setTextSize(1);
+      //display.setTextSize(1);
     break;
   
     case 3:
