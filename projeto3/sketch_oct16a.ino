@@ -7,6 +7,12 @@
 Adafruit_PCD8544 display = Adafruit_PCD8544(8, 9, 2); //
 
 /*
+ * Sensor de temperatura 
+ */
+int sensorTemperatura = A0;
+float temperatura;
+
+/*
  * Teclado Matricial
  */
 int C1 = A3;
@@ -24,10 +30,13 @@ int solto = 0, pressionado = 0;
 
 // tempo em que uma tecla foi acionada, para fazer o debounce
 unsigned long int momento_pressionado;
-
+unsigned int intervaloTemperatura;
+unsigned int tempo_display;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin (9600);
+
+  temperatura = 0;
 
   /*
    * Inicializa o Visor LCD
@@ -76,6 +85,10 @@ void loop() {
   */
   estado = checa_tecla();
   solto = 0;
+  
+  //medeTemperatura();
+
+  
   //Serial.print("Estado = ");
   //Serial.println(estado);
 
@@ -86,7 +99,7 @@ void loop() {
       //depois vou mudar, coloquei 11 pra como se apertasse o 0 levasse ate o menu principal
       Serial.println("Menu Principal");
       display_print(0);
-      delay(300);
+      //CONSERTAR DEBOUNCE
       //sem o delay ficou aparecendo várias vezes na tela... corrigir isso
     break;
 
@@ -126,6 +139,7 @@ void loop() {
       if (estado == 12) {
         Serial.println("Estou entrando na operacao de MEASURE");
         display_print(2);
+        tempo_display = 0;
         //função 
       }
       else if (estado == 10) {
@@ -272,7 +286,14 @@ void display_print(int i) {
       display.setCursor(0,0);
       display.println("Temperatura: ");
       //tem mais coisa daqui
+      display.setCursor(0,16);
+      display.setTextSize(2);
+      display.println(temperatura);
       display.display();
+      display.setTextSize(1);
+      if (tempo_display > 200) {
+        estado = 11;  //mudar para -1
+      }
     break;
   
     case 3:
@@ -313,7 +334,6 @@ void display_print(int i) {
       display.clearDisplay();
       display.setCursor(0,0);
       display.println("Memoria APAGADA");
-      //delay(300);
     break;
   
     default:
@@ -341,8 +361,17 @@ int checa_coluna() {
 
 void contador_tempo () {
   momento_pressionado += 1;
-  
+  intervaloTemperatura += 1;
+  tempo_display += 1;
+  if (intervaloTemperatura > 200){//passou 2s
+    intervaloTemperatura = 0;
+    temperatura = (analogRead(sensorTemperatura)/1023.0)*5*100;
+  }
 }
+
+//void medeTemperatura(){
+//  temperatura = (analogRead(sensorTemperatura)/1023.0)*5*100;
+//}
 
 
 int checa_tecla() {
