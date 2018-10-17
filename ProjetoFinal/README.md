@@ -8,4 +8,4 @@
 # https://www.robocore.net/tutoriais/como-programar-nodemcu-arduino-ide.html  # esquematico do hardware #
 # http://vascoferraz.com/projects/24c-eeprom-check/
 # https://www.esp8266.com/viewtopic.php?f=32&t=12623
-# https://www.arduinoecia.com.br/2018/04/nodemcu-esp8266-com-display-oled-i2c.html  # isc na mcu #
+# https://www.arduinoecia.com.br/2018/04/nodemcu-esp8266-com-display-oled-i2c.html  # i2c na mcu #
