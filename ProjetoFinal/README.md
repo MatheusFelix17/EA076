@@ -9,3 +9,5 @@
 # http://vascoferraz.com/projects/24c-eeprom-check/
 # https://www.esp8266.com/viewtopic.php?f=32&t=12623
 # https://www.arduinoecia.com.br/2018/04/nodemcu-esp8266-com-display-oled-i2c.html  # i2c na mcu #
+https://github.com/KonkerLabs
+https://raw.githubusercontent.com/KonkerLabs/arduino_examples/master/Termometro_MQTT/term.jpg
