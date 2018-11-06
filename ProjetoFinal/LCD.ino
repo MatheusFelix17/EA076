@@ -41,3 +41,5 @@ int memoriaLivre(unsigned int memPosition){
   return espacoLivre;
 }
 
+
+
