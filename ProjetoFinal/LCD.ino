@@ -5,13 +5,15 @@ void display_print(int i) {
     case 0:
       display.clearDisplay();
       display.setCursor(0,0);
-      display.println("Vote para PRESIDENTE:");
+      display.println("Vote para");
       display.setCursor(0,8);
-      display.println("Entre com 2 digitos");
+      display.println("PRESIDENTE:");
       display.setCursor(0,16);
-      display.println("Seguidos de '*' ou '#'");
+      display.println("2 digitos +");
       display.setCursor(0,24);
-      display.println("Para cancelar ou confirmar");
+      display.println("'*' cancelar");
+      display.setCursor(0,32);
+      display.println("'#' confirmar");
       display.display();
     break;
 
@@ -24,9 +26,9 @@ void display_print(int i) {
       display.setCursor(0,16);
       display.println("Partido: PSI");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
@@ -35,13 +37,13 @@ void display_print(int i) {
       display.setCursor(0,0);
       display.println("Numero: 17");
       display.setCursor(0,8);
-      display.println("Nome: Gustavo Simonini");
+      display.println("Nome: Gustavo");
       display.setCursor(0,16);
       display.println("Partido: NSL");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
@@ -50,13 +52,13 @@ void display_print(int i) {
       display.setCursor(0,0);
       display.println("Numero: 22");
       display.setCursor(0,8);
-      display.println("Nome: Bruce Wayne");
+      display.println("Nome: Wayne");
       display.setCursor(0,16);
       display.println("Partido: PCG");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
@@ -65,13 +67,13 @@ void display_print(int i) {
       display.setCursor(0,0);
       display.println("Numero: 33");
       display.setCursor(0,8);
-      display.println("Nome: ");
+      display.println("Nome: Goku");
       display.setCursor(0,16);
-      display.println("Partido: ");
+      display.println("Partido: UN7");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
@@ -80,13 +82,13 @@ void display_print(int i) {
       display.setCursor(0,0);
       display.println("Numero: 44");
       display.setCursor(0,8);
-      display.println("Nome: ");
+      display.println("Nome: Vegeta");
       display.setCursor(0,16);
-      display.println("Partido: ");
+      display.println("Partido: VGT");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
@@ -95,13 +97,13 @@ void display_print(int i) {
       display.setCursor(0,0);
       display.println("Numero: 55");
       display.setCursor(0,8);
-      display.println("Nome: ");
+      display.println("Nome: Beerus");
       display.setCursor(0,16);
-      display.println("Partido: ");
+      display.println("Partido: GOD");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
@@ -110,20 +112,22 @@ void display_print(int i) {
       display.setCursor(0,0);
       display.println("Numero: 66");
       display.setCursor(0,8);
-      display.println("Nome: Sheev Palpatine");
+      display.println("Nome:Palpatine");
       display.setCursor(0,16);
       display.println("Partido: EMP");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
     case 100:
       display.clearDisplay();
       display.setCursor(0,0);
-      display.println("Voto registrado com sucesso!");
+      display.println("Voto");
+      display.setCursor(0,8);
+      display.println(" Registrado!");
       display.display();
     break;
     
@@ -134,12 +138,12 @@ void display_print(int i) {
       display.println(i);
       display.setCursor(0,8);
       display.println("NUMERO ERRADO");
-      display.setCursor(4,16);    //tentar centralizar, nao sei se vai bugar igual quando aumentamos text size
+      display.setCursor(4,16);    //tentar centralizar, nao sei se vai bugar igual quando aumentamos text size 14 caracteres parece quase ocupar tudo
       display.println("VOTO NULO");
       display.setCursor(0,24);
-      display.println("Pressione # para confirmar");
+      display.println("# confirmar");
       display.setCursor(0,32);
-      display.println("Pressione * para cancelar");
+      display.println("* cancelar");
       display.display();
     break;
 
@@ -154,4 +158,3 @@ int memoriaLivre(unsigned int memPosition){
   }
   return espacoLivre;
 }
-
