@@ -153,6 +153,8 @@ void loop() {
     //confirma
     else if (teclado == 12){
       Serial.println("Confirmou");
+      display_print(100); //confirmacao de voto
+      display.display();
     }
   }
 
