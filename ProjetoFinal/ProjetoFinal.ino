@@ -2,7 +2,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 #include <TimerOne.h>
-#include <Wire.h>
+#include <SoftwareSerial.h>
 
 
 /*
@@ -19,6 +19,8 @@
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 7); //
 
+SoftwareSerial esp8266(2, 3);
+
 
 // flags para detecção do botão:
 short solto = 0, pressionado = 0;
@@ -27,7 +29,7 @@ short solto = 0, pressionado = 0;
    Contadores de tempo
 */
 unsigned short momento_pressionado;
-unsigned short tempo_display;
+unsigned short tempo_upload;
 
 /*flag para leitura de teclado*/
 bool pressionou = false;
@@ -37,15 +39,14 @@ int lendo_tecla = 0;
 int digito_1, digito_2;
 int numero;
 
-bool primeiro_voto[8]; //caso seja o primeiro voto e a memória não está zerada, 7 candidatos + posicao nula, = 100
+/*contadores dos candidatos*/
+short contador11 = 0;
+short contador22 = 0;
+short contador33 = 0;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin (9600);
-
-  //cada voto que for realizado para cada candidato será o primeiro (até que se repita o numero)
-  for (int i = 0; i < 8; i++)
-    primeiro_voto[i] = true;
 
   /*
      Inicializa o Visor LCD
@@ -73,17 +74,26 @@ void setup() {
   momento_pressionado = 0;
 
   /*
-     Inicializa a interrupcao de tempo a cada 10ms
+     Inicializa a interrupcao de tempo a cada 0.5s
   */
-  Timer1.initialize(10000);
+  Timer1.initialize(500000);
   Timer1.attachInterrupt(contador_tempo);
 
-  //Inicializa o I2C para a memoria
-  Wire.begin();
+
+  esp8266.begin(19200);
+  //Configura o ESP
+
+  Setting_ESP();
+  tempo_upload =  0;
 }
 
 
 void loop() {
+  //fica recebendo requisicoes
+  if(tempo_upload == 10){
+    update_page();
+    tempo_upload = 0;
+  }
 
   /* Lendo o teclado para o primeiro dígito */
   int teclado = checa_tecla();  //chamava teclado
@@ -159,8 +169,6 @@ void loop() {
     //confirma
     else if (teclado == 12){
       Serial.println("Confirmou");
-      display_print(100); //confirmacao de voto
-      display.display();
     }
   }
 
@@ -177,130 +185,7 @@ void loop() {
 
 }
 
-/*
- * Função que realiza a contagem dos votos do candidato
- * na memória EEPROM
- * 
- */
 
-void salva_voto(int numero) {
-  int atual;
-  
-  /*
-   * recebe o numero do candidato,
-   * faz a leitura correspondente do numero de votos
-   * que esse candidato possui atualmente,
-   * incrementa 1, e salva novamente na posicao de memória
-   */
-   //posicao do candidato na memória = 2*numero do candidato
-
-  switch(numero) {
-    case 11:
-      atual = readEeprom(22);
-      if (primeiro_voto[0] == true) { //se for o primeiro voto e tiver algum valor diferente de 0 lá, consideramos 0
-        if (atual != 0) {
-          atual = 0;         
-        }
-        primeiro_voto[0] = false;
-      }
-      
-      atual += 1; //soma 1 voto e salva na posicao correspondente
-      writeEepromPosition(22, atual);
-          
-    break;
-
-    case 17:
-      atual = readEeprom(34);
-      if (primeiro_voto[1] = true) {
-        if (atual != 0)
-          atual = 0;
-        primeiro_voto[1] = false;  
-      }
-
-      atual += 1;
-      writeEepromPosition(34, atual);
-
-    break;
-
-    case 22:
-      atual = readEeprom(44);
-      if (primeiro_voto[2] = true) {
-        if (atual != 0)
-          atual = 0;
-        primeiro_voto[2] = false;  
-      }
-
-      atual += 1;
-      writeEepromPosition(44, atual);    
-
-    break;
-
-    case 33:
-      atual = readEeprom(66);
-      if (primeiro_voto[3] = true) {
-        if (atual != 0)
-          atual = 0;
-        primeiro_voto[3] = false;  
-      }
-
-      atual += 1;
-      writeEepromPosition(66, atual);    
-
-    break;
-
-    case 44:
-      atual = readEeprom(88);
-      if (primeiro_voto[4] = true) {
-        if (atual != 0)
-          atual = 0;
-        primeiro_voto[4] = false;  
-      }
-
-      atual += 1;
-      writeEepromPosition(88, atual);    
-
-    break;
-
-    case 55:
-      atual = readEeprom(110);
-      if (primeiro_voto[5] = true) {
-        if (atual != 0)
-          atual = 0;
-        primeiro_voto[5] = false;  
-      }
-
-      atual += 1;
-      writeEepromPosition(110, atual);    
-
-    break;
-
-    case 66:
-      atual = readEeprom(132);
-      if (primeiro_voto[6] = true) {
-        if (atual != 0)
-          atual = 0;
-        primeiro_voto[6] = false;  
-      }
-
-      atual += 1;
-      writeEepromPosition(132, atual);    
-
-    break;
-
-    default:
-      atual = readEeprom(200);
-      if (primeiro_voto[7] = true) {
-        if (atual != 0)
-          atual = 0;
-        primeiro_voto[7] = false;  
-      }
-
-      atual += 1;
-      writeEepromPosition(200, atual);
-    break;
-  }
-   
-}
 
 /*
    Funcao para tratamento da interrupção do TimerOne
@@ -308,7 +193,7 @@ void salva_voto(int numero) {
 */
 void contador_tempo () {
   momento_pressionado += 1;
-  tempo_display += 1;
+  tempo_upload += 1;
 }
 
 
