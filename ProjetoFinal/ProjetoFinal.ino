@@ -37,9 +37,15 @@ int lendo_tecla = 0;
 int digito_1, digito_2;
 int numero;
 
+bool primeiro_voto[8]; //caso seja o primeiro voto e a memória não está zerada, 7 candidatos + posicao nula, = 100
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin (9600);
+
+  //cada voto que for realizado para cada candidato será o primeiro (até que se repita o numero)
+  for (int i = 0; i < 8; i++)
+    primeiro_voto[i] = true;
 
   /*
      Inicializa o Visor LCD
@@ -171,7 +177,130 @@ void loop() {
 
 }
 
+/*
+ * Função que realiza a contagem dos votos do candidato
+ * na memória EEPROM
+ * 
+ */
 
+void salva_voto(int numero) {
+  int atual;
+  
+  /*
+   * recebe o numero do candidato,
+   * faz a leitura correspondente do numero de votos
+   * que esse candidato possui atualmente,
+   * incrementa 1, e salva novamente na posicao de memória
+   */
+   //posicao do candidato na memória = 2*numero do candidato
+
+  switch(numero) {
+    case 11:
+      atual = readEeprom(22);
+      if (primeiro_voto[0] == true) { //se for o primeiro voto e tiver algum valor diferente de 0 lá, consideramos 0
+        if (atual != 0) {
+          atual = 0;         
+        }
+        primeiro_voto[0] = false;
+      }
+      
+      atual += 1; //soma 1 voto e salva na posicao correspondente
+      writeEepromPosition(22, atual);
+          
+    break;
+
+    case 17:
+      atual = readEeprom(34);
+      if (primeiro_voto[1] = true) {
+        if (atual != 0)
+          atual = 0;
+        primeiro_voto[1] = false;  
+      }
+
+      atual += 1;
+      writeEepromPosition(34, atual);
+
+    break;
+
+    case 22:
+      atual = readEeprom(44);
+      if (primeiro_voto[2] = true) {
+        if (atual != 0)
+          atual = 0;
+        primeiro_voto[2] = false;  
+      }
+
+      atual += 1;
+      writeEepromPosition(44, atual);    
+
+    break;
+
+    case 33:
+      atual = readEeprom(66);
+      if (primeiro_voto[3] = true) {
+        if (atual != 0)
+          atual = 0;
+        primeiro_voto[3] = false;  
+      }
+
+      atual += 1;
+      writeEepromPosition(66, atual);    
+
+    break;
+
+    case 44:
+      atual = readEeprom(88);
+      if (primeiro_voto[4] = true) {
+        if (atual != 0)
+          atual = 0;
+        primeiro_voto[4] = false;  
+      }
+
+      atual += 1;
+      writeEepromPosition(88, atual);    
+
+    break;
+
+    case 55:
+      atual = readEeprom(110);
+      if (primeiro_voto[5] = true) {
+        if (atual != 0)
+          atual = 0;
+        primeiro_voto[5] = false;  
+      }
+
+      atual += 1;
+      writeEepromPosition(110, atual);    
+
+    break;
+
+    case 66:
+      atual = readEeprom(132);
+      if (primeiro_voto[6] = true) {
+        if (atual != 0)
+          atual = 0;
+        primeiro_voto[6] = false;  
+      }
+
+      atual += 1;
+      writeEepromPosition(132, atual);    
+
+    break;
+
+    default:
+      atual = readEeprom(200);
+      if (primeiro_voto[7] = true) {
+        if (atual != 0)
+          atual = 0;
+        primeiro_voto[7] = false;  
+      }
+
+      atual += 1;
+      writeEepromPosition(200, atual);
+    break;
+  }
+   
+}
 
 /*
    Funcao para tratamento da interrupção do TimerOne

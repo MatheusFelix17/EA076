@@ -30,6 +30,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(11);
     break;
 
     case 17:
@@ -45,6 +46,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(17);
     break;
 
     case 22:
@@ -60,6 +62,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(22);
     break;
 
     case 33:
@@ -75,6 +78,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(33);
     break;
 
     case 44:
@@ -90,6 +94,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(44);
     break;
 
     case 55:
@@ -105,6 +110,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(55);
     break;
 
     case 66:
@@ -120,6 +126,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(66);
     break;
 
     case 100:
@@ -145,6 +152,7 @@ void display_print(int i) {
       display.setCursor(0,32);
       display.println("* cancelar");
       display.display();
+      salva_voto(100);
     break;
 
   }
