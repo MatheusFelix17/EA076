@@ -56,7 +56,7 @@ void display_print(int i) {
       display.println(i);
       display.setCursor(0,8);
       display.println("NUMERO ERRADO");
-      display.setCursor(4,16);    //tentar centralizar, nao sei se vai bugar igual quando aumentamos text size 14 caracteres parece quase ocupar tudo
+      display.setCursor(4,16);    
       display.println("VOTO NULO");
       display.setCursor(0,24);
       display.println("# confirmar");
